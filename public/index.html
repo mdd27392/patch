@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Patch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Patch is a tiny weaving mini app where you tap a 6x6 grid to stitch a simple textile tile. Cycle stitches per cell and keep a different woven patch for each day.">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Patch">
+  <meta property="og:description" content="Patch is a tiny weaving mini app where you tap a 6x6 grid to stitch a simple textile tile. Cycle stitches per cell and keep a different woven patch for each day.">
+  <meta property="og:image" content="https://patch-mini.vercel.app/assets/hero.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://patch-mini.vercel.app/">
+
+  <!-- Farcaster Mini App meta -->
+  <meta name="fc:miniapp" content='{"version":"1","name":"Patch","iconUrl":"https://patch-mini.vercel.app/assets/icon.png","imageUrl":"https://patch-mini.vercel.app/assets/embed-3x2.png","button":{"title":"Open Patch","action":{"type":"launch_frame","url":"https://patch-mini.vercel.app/"}},"splashImageUrl":"https://patch-mini.vercel.app/assets/splash.png","splashBackgroundColor":"#020617"}'>
+
+  <!-- Farcaster Frame meta -->
+  <meta property="fc:frame" content='{"version":"vNext","imageUrl":"https://patch-mini.vercel.app/assets/embed-3x2.png","button":{"title":"Open Patch","action":{"type":"launch_frame","url":"https://patch-mini.vercel.app/"}},"splashImageUrl":"https://patch-mini.vercel.app/assets/splash.png","splashBackgroundColor":"#020617"}'>
+
+  <meta name="theme-color" content="#020617">
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #020617;
+      --fg: #e5e7eb;
+      --muted: #6b7280;
+      --accent-a: #f97316;
+      --accent-b: #22c55e;
+      --accent-c: #3b82f6;
+      --accent-d: #a855f7;
+      --surface: #020617;
+      --border: rgba(148, 163, 184, 0.35);
+      --cell-bg: rgba(15, 23, 42, 0.9);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      background: radial-gradient(circle at top, #020617 0%, #020617 100%);
+      color: var(--fg);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      margin-inline: auto;
+      padding: 18px 14px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      padding: 14px 12px 14px;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.98));
+      box-shadow:
+        0 18px 40px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .card-title {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(148, 163, 184, 0.98);
+    }
+
+    .card-day {
+      font-size: 0.78rem;
+      color: rgba(209, 213, 219, 0.96);
+    }
+
+    .grid-shell {
+      border-radius: 18px;
+      padding: 10px 10px 12px;
+      background: radial-gradient(circle at top, rgba(24, 24, 27, 0.9), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(55, 65, 81, 0.9);
+    }
+
+    .patch-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .cell {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 8px;
+      background: var(--cell-bg);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      cursor: pointer;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .cell-inner {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: rgba(148, 163, 184, 0.96);
+      transition: background 0.15s ease-out, transform 0.08s ease-out, box-shadow 0.12s ease-out;
+    }
+
+    .cell:active .cell-inner {
+      transform: scale(0.95);
+    }
+
+    .cell.state-0 .cell-inner {
+      background: var(--cell-bg);
+      box-shadow: none;
+    }
+
+    .cell.state-1 .cell-inner {
+      background: linear-gradient(135deg, rgba(248, 113, 113, 0.4), rgba(248, 113, 113, 0.08));
+      box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.6);
+    }
+
+    .cell.state-2 .cell-inner {
+      background: repeating-linear-gradient(
+        135deg,
+        rgba(45, 212, 191, 0.35),
+        rgba(45, 212, 191, 0.35) 3px,
+        rgba(15, 23, 42, 0.0) 3px,
+        rgba(15, 23, 42, 0.0) 7px
+      );
+      box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.7);
+    }
+
+    .cell.state-3 .cell-inner {
+      background:
+        radial-gradient(circle at 25% 25%, rgba(96, 165, 250, 0.9), transparent 60%),
+        radial-gradient(circle at 75% 75%, rgba(196, 181, 253, 0.9), transparent 60%);
+      box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.7);
+    }
+
+    .legend {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: rgba(148, 163, 184, 0.98);
+    }
+
+    .legend-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+    }
+
+    .legend-swatch.base {
+      background: var(--cell-bg);
+    }
+
+    .legend-swatch.weave {
+      background: linear-gradient(135deg, rgba(248, 113, 113, 0.4), rgba(248, 113, 113, 0.08));
+    }
+
+    .legend-swatch.stripe {
+      background: repeating-linear-gradient(
+        135deg,
+        rgba(45, 212, 191, 0.35),
+        rgba(45, 212, 191, 0.35) 3px,
+        rgba(15, 23, 42, 0.0) 3px,
+        rgba(15, 23, 42, 0.0) 7px
+      );
+    }
+
+    .legend-swatch.glow {
+      background:
+        radial-gradient(circle at 25% 25%, rgba(96, 165, 250, 0.9), transparent 60%),
+        radial-gradient(circle at 75% 75%, rgba(196, 181, 253, 0.9), transparent 60%);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 6px 12px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      background: rgba(15, 23, 42, 0.96);
+      color: rgba(248, 250, 252, 0.98);
+      font-size: 0.78rem;
+      cursor: pointer;
+      user-select: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.12s ease-out, border-color 0.12s ease-out, transform 0.06s ease-out;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      border-color: rgba(129, 140, 248, 0.9);
+      background: linear-gradient(135deg, rgba(129, 140, 248, 0.16), rgba(37, 99, 235, 0.08));
+    }
+
+    .status-text {
+      font-size: 0.75rem;
+      color: rgba(148, 163, 184, 0.96);
+    }
+
+    .history-card {
+      border-radius: 18px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 10px 10px 8px;
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), rgba(17, 24, 39, 0.98));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.76rem;
+      color: rgba(148, 163, 184, 0.98);
+    }
+
+    .history-strip {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.6) transparent;
+    }
+
+    .history-strip::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    .history-strip::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.6);
+      border-radius: 999px;
+    }
+
+    .history-tile {
+      flex: 0 0 auto;
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 3px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(6, 1fr);
+      gap: 1px;
+    }
+
+    .history-cell {
+      border-radius: 2px;
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .history-cell.s1 {
+      background: rgba(248, 113, 113, 0.8);
+    }
+
+    .history-cell.s2 {
+      background: rgba(45, 212, 191, 0.85);
+    }
+
+    .history-cell.s3 {
+      background: rgba(129, 140, 248, 0.85);
+    }
+
+    .history-label {
+      font-size: 0.7rem;
+      color: rgba(148, 163, 184, 0.96);
+    }
+
+    .environment-row {
+      font-size: 0.74rem;
+      color: rgba(148, 163, 184, 0.96);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .environment-row span.highlight { color: #a5b4fc; }
+
+    footer {
+      margin-top: 4px;
+      font-size: 0.7rem;
+      color: rgba(100, 116, 139, 0.95);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(148, 163, 184, 0.7); }
+
+    @media (min-height: 780px) {
+      .card { padding-block: 16px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title-row">
+        <div>
+          <div class="app-title">Patch</div>
+          <div class="subtitle">Weave a tiny daily tile.</div>
+        </div>
+        <div class="badge">Mini Loom</div>
+      </div>
+    </header>
+
+    <main>
+      <section class="card">
+        <div class="card-header">
+          <span class="card-title">Today&apos;s patch</span>
+          <span class="card-day" id="patch-day"></span>
+        </div>
+
+        <div class="grid-shell">
+          <div class="patch-grid" id="patch-grid">
+            <!-- Cells injected by JS -->
+          </div>
+          <div class="legend">
+            <div class="legend-row">
+              <span class="legend-swatch base"></span><span>Empty</span>
+              <span class="legend-swatch weave"></span><span>Weave</span>
+              <span class="legend-swatch stripe"></span><span>Stripe</span>
+              <span class="legend-swatch glow"></span><span>Glow</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-primary" id="btn-random">Shuffle pattern</button>
+          <button class="btn" id="btn-clear">Clear</button>
+          <span class="status-text" id="status-text">0 stitched cells</span>
+        </div>
+
+        <div class="history-card">
+          <div class="history-header">
+            <span>Recent patches</span>
+            <span class="history-label">Last few days</span>
+          </div>
+          <div class="history-strip" id="history-strip">
+            <!-- Thumbnails injected by JS -->
+          </div>
+        </div>
+
+        <div class="environment-row">
+          <span id="environment-indicator">Detecting environment…</span>
+          <span class="highlight" id="patch-state">Unsaved live patch</span>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Patterns stay on this device.</span>
+      <span class="dot"></span>
+    </footer>
+  </div>
+
+  <script type="module" src="./script.js"></script>
+</body>
+</html>
