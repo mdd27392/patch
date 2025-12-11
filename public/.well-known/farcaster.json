@@ -1,0 +1,31 @@
+{
+  "accountAssociation": {
+    "header": "TODO_REPLACE_BASE64_HEADER",
+    "payload": "TODO_REPLACE_BASE64_PAYLOAD",
+    "signature": "TODO_REPLACE_BASE64_SIGNATURE"
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Patch",
+    "homeUrl": "https://patch-mini.vercel.app/",
+    "iconUrl": "https://patch-mini.vercel.app/assets/icon.png",
+    "splashImageUrl": "https://patch-mini.vercel.app/assets/splash.png",
+    "splashBackgroundColor": "#020617",
+    "subtitle": "Weave a tiny daily tile",
+    "description": "Patch is a tiny weaving mini app where you tap a 6x6 grid to stitch a simple textile tile. Cycle stitches per cell and keep a different woven patch for each day.",
+    "primaryCategory": "art-creativity",
+    "tags": [
+      "fun",
+      "simple",
+      "utility"
+    ],
+    "heroImageUrl": "https://patch-mini.vercel.app/assets/hero.png",
+    "ogTitle": "Patch",
+    "ogDescription": "Patch is a tiny weaving mini app where you tap a 6x6 grid to stitch a simple textile tile. Cycle stitches per cell and keep a different woven patch for each day.",
+    "ogImageUrl": "https://patch-mini.vercel.app/assets/hero.png",
+    "screenshotUrls": [
+      "https://patch-mini.vercel.app/assets/hero.png"
+    ],
+    "noindex": true
+  }
+}
